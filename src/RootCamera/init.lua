@@ -8,6 +8,11 @@ local ContextActionService = game:GetService("ContextActionService")
 local VRService = game:GetService("VRService")
 local Settings = UserSettings()
 
+-- Packages
+local Package = script.Parent
+local Packages = Package.Parent
+local Maid = require(Packages:WaitForChild("Maid"))
+
 -- Modules
 local CameraScript = script.Parent
 local ShiftLockController = require(CameraScript:WaitForChild("ShiftLockController"))
@@ -50,12 +55,187 @@ local PORTRAIT_DEFAULT_ZOOM = 25
 local DEADZONE = 0.1
 
 -- Types
+type Maid = Maid.Maid
+export type CameraTween = {
+	duration: number,
+	from: number,
+	func: (number, number, number) -> number,
+	start: number,
+	to: number
+}
 
+export type CameraController = {
+	__index: CameraController,
+	_Maid: Maid,
+	R15HeadHeight: Vector3,
+	ShiftLock: boolean,
+	Enabled: boolean,
+	RotateInput: Vector2,
+	DefaultZoom: number,
+	CFrame: CFrame?,
+
+	_VRRotateKeyCooldown: {[Enum.KeyCode]: boolean},
+	_Tweens: {[string]: CameraTween},
+	_FingerTouches: {[InputObject]: boolean},
+	_InputStartPositions: {[InputObject]: Vector3},
+	_InputStartTimes: {[InputObject]: number},
+
+	_IsFirstPerson: boolean,
+	_IsRightMouseDown: boolean,
+	_IsMiddleMouseDown: boolean,
+	_IsInFirstPerson: boolean,
+
+	_ActiveGamepad: Enum.UserInputType?,
+	_LastSubject: Instance?,
+	_LastSubjectPosition: Vector3?,
+	_LastVRRotation: number,
+	_LastUserPanCamera: number?, 
+
+	_IsDynamicThumbstickEnabled: boolean,
+	_DynamicThumbstickFrame: Frame?,
+
+	_VRRotationIntensityExists: boolean,
+	_LastVRRotationCheck: number,	
+	_CameraTranslationConstraints: Vector3,
+	_HumanoidJumpOrigin: Vector3?,
+	_TrackingHumanoid: Humanoid?,
+
+	_StartPos: Vector3?,
+	_LastPos: Vector3?,
+	_PanBeginLook: Vector3?,
+	_LastTapTime: number?,
+	_NumUnsunkTouches: number,
+	
+	_StartingDiff: number?,
+	_PinchBeginZoom: number?,
+	_CurrentZoom: number?,
+	_LastThumbstickRotate: number?,
+	_LastVrRotationCheck: number?,
+
+	_ZoomEnabled: boolean,
+	_PanEnabled: boolean,
+	_KeyPanEnabled: boolean,
+	_TurningLeft: boolean,
+	_TurningRight: boolean,
+	_UserPanningTheCamera: boolean,
+	_CameraFrozen: boolean,
+	_VRMaxSpeed: number,
+	_NumOfSeconds: number,
+	_CurrentSpeed: number,
+	_MaxSpeed: number,
+	_YSensitivity: number,
+
+	_LastThumbstickPos: Vector2,
+	_LastVelocity: Vector2?,
+	
+	_InputBeganConn: RBXScriptConnection?,
+	_InputChangedConn: RBXScriptConnection?,
+	_InputEndedConn: RBXScriptConnection?,
+	_WindowUnfocusConn: RBXScriptConnection?,
+	_MenuOpenedConn: RBXScriptConnection?,
+	_ShiftLockToggleConn: RBXScriptConnection?,
+	_GamepadConnectedConn: RBXScriptConnection?,
+	_GamepadDisconnectedConn: RBXScriptConnection?,
+	_TouchActivateConn: RBXScriptConnection?,
+	_SubjectStateChangedConn: RBXScriptConnection?,
+	_CameraSubjectChangedConn: RBXScriptConnection?,
+	_WorkspaceChangedConn: RBXScriptConnection?,
+	_HumanoidChildAddedConn: RBXScriptConnection?,
+	_HumanoidChildRemovedConn: RBXScriptConnection?,
+	_CameraChangedConn: RBXScriptConnection?,
+	_WorkspaceCameraChangedConn: RBXScriptConnection?,
+	_HeightScaleChangedConn: RBXScriptConnection?,
+
+	_LastCameraTransform: CFrame?,
+	LastSubjectCFrame: CFrame?,
+
+	_GamepadPanningCamera: Vector2,
+
+	GetActivateValue: (self: CameraController) -> number,
+	IsPortraitMode: (self: CameraController) -> boolean,
+	GetRotateAmountValue: (self: CameraController, vrRotationIntensity: string) -> Vector2,
+	GetRepeatDelayValue: (self: CameraController, vrRotationIntensity: string) -> number,
+
+	GetShiftLock: (self: CameraController) -> boolean,
+	GetHumanoid: (self: CameraController) -> Humanoid?,
+	GetHumanoidRootPart: (self: CameraController) -> BasePart?,
+	GetSubjectPosition: (self: CameraController) -> Vector3?,
+	ResetCameraLook: (self: CameraController) -> nil,
+	ResetInputStates: (self: CameraController) -> nil,
+	GetCameraLook: (self: CameraController) -> Vector3,
+	GetCameraZoom: (self: CameraController) -> number,
+	GetCameraActualZoom: (self: CameraController) -> number,
+	GetCameraHeight: (self: CameraController) -> number,
+	ViewSizeX: (self: CameraController) -> number,
+	ViewSizeY: (self: CameraController) -> number,
+	ScreenTranslationToAngle: (self: CameraController, translationVector: Vector2) -> Vector2,
+	MouseTranslationToAngle: (self: CameraController, translationVector: Vector2) -> Vector2,
+	RotateVector: (self: CameraController, startVector: Vector3, xyRotateVector: Vector2) -> (Vector3, Vector2),
+	RotateCamera: (self: CameraController, startVector: Vector3, xyRotateVector: Vector2) -> (Vector3, Vector2),
+	IsInFirstPerson: (self: CameraController) -> boolean,
+	UpdateMouseBehavior: (self: CameraController) -> nil,
+	ZoomCamera: (self: CameraController, desiredZoom: number) -> number,
+	RK4Integrator: (self: CameraController, position: number, velocity: number, t: number) -> (number, number),
+	ZoomCameraBy: (self: CameraController, zoomScale: number) -> number,
+	ZoomCameraFixedBy: (self: CameraController, zoomScale: number) -> number,
+	Update: (self: CameraController) -> nil,
+	ApplyVRTransform: (self: CameraController) -> nil,
+	ShouldUseVRRotation: (self: CameraController) -> boolean,
+	GetVRRotationInput: (self: CameraController) -> Vector2,
+	UpdateGamepad: (self: CameraController) -> Vector2,
+	GetVRFocus: (self: CameraController, subjectPosition: Vector3, timeDelta: number) -> CFrame,
+	DisconnectInputEvents: (self: CameraController) -> nil,
+	BindGamepadInputActions: (self: CameraController) -> nil,
+	ConnectInputEvents: (self: CameraController) -> nil,
+	ProcessTweens: (self: CameraController) -> nil,
+	SetEnabled: (self: CameraController, newState: boolean) -> nil,
+	Destroy: (self: CameraController) -> nil,
+	new: () -> CameraController,
+
+	_GetDynamicThumbstickFrame: (self: CameraController) -> Frame?,
+	_OnWorkspaceCameraChanged: (self: CameraController) -> nil,
+	_GetRenderCFrame: (self: CameraController, part: BasePart) -> CFrame,
+	_GetHumanoidPartToFollow: (self: CameraController, humanoid: Humanoid, humanoidStateType: Enum.HumanoidStateType) -> BasePart,
+	_CancelCameraFreeze: (self: CameraController, keepConstraints: boolean) -> nil,
+	_StartCameraFreeze: (self: CameraController, subjectPosition: Vector3, humanoidToTrack: Humanoid) -> nil,
+	_RescaleCameraOffset: (self: CameraController, newScaleFactor: number) -> nil,
+	_OnHumanoidSubjectChildAdded: (self: CameraController, child: Instance) -> nil,
+	_OnHumanoidSubjectChildRemoved: (self: CameraController, child: Instance) -> nil,
+	_OnNewCameraSubject: (self: CameraController) -> nil,
+	_OnCurrentCameraChanged: (self: CameraController) -> nil,
+	_OnTouchBegan: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnTouchChanged: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_CalcLookBehindRotateInput: (self: CameraController, torso: BasePart) -> Vector2,
+	_IsTouchTap: (self: CameraController, input: InputObject) -> boolean,
+	_OnTouchEnded: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMousePanButtonPressed: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMousePanButtonReleased: (self: CameraController, input: InputObject?, processed: boolean?) -> nil,
+	_OnMouse2Down: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMouse2Up: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMouse3Down: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMouse3Up: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMouseMoved: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnMouseWheel: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_RotateVectorByAngleAndRound: (self: CameraController, camLook: Vector3, rotateAngle: number, roundAmount: number) -> number,
+	_OnKeyDown: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnKeyUp: (self: CameraController, input: InputObject, processed: boolean) -> nil,
+	_OnWindowFocusReleased: (self: CameraController) -> nil,
+	_GetGamepadPan: (self: CameraController, name: string, state: Enum.UserInputState, input: InputObject) -> nil,
+	_DoGamepadZoom: (self: CameraController, name: string, state: Enum.UserInputState, input: InputObject) -> nil,
+	_OnCharacterAdded: (self: CameraController, player: Player, character: Model) -> nil,
+	_OnPlayerAdded: (self: CameraController, player: Player) -> nil,
+	_OnGameLoaded: (self: CameraController) -> nil,
+	_OnDynamicThumbstickEnabled: (self: CameraController) -> nil,
+	_OnDynamicThumbstickDisabled: (self: CameraController) -> nil,
+	_OnGameSettingsTouchMovementModeChanged: (self: CameraController) -> nil,
+	_OnDevTouchMovementModeChanged: (self: CameraController) -> nil,
+
+	[any]: nil,
+}
 
 -- References
-local LocalPlayer = PlayersService.LocalPlayer
 local PlayerGui = nil
-if LocalPlayer then
+if PlayersService.LocalPlayer then
 	PlayerGui = PlayersService.LocalPlayer:WaitForChild("PlayerGui")
 end
 
@@ -64,10 +244,16 @@ local setCameraOnSpawn = true
 local hasGameLoaded = false
 local gestureArea = nil
 local gestureAreaManagedByControlScript = false
-
+local humanoidCache: {[Player]: Humanoid} = {}
 
 local function findAngleBetweenXZVectors(vec2: Vector3, vec1: Vector3)
 	return math.atan2(vec1.X * vec2.Z - vec1.Z * vec2.X, vec1.X * vec2.X + vec1.Z * vec2.Z)
+end
+
+local function getDynamicInputObject(): InputObject
+	-- local DynamicThumbstickModule = require(MasterControl:WaitForChild("DynamicThumbstick") :: ModuleScript)
+	-- local dynamicInputObject = DynamicThumbstickModule:GetInputObject()
+	return nil :: any
 end
 
 -- K is a tunable parameter that changes the shape of the S-curve
@@ -90,12 +276,24 @@ local function fromSCurveSpace(t: number)
 	return t / 2 + 0.5
 end
 
+local function gamepadLinearToCurve(thumbstickPosition)
+	local function onAxis(axisValue)
+		local sign = 1
+		if axisValue < 0 then
+			sign = -1
+		end
+		local point = fromSCurveSpace(sCurveTranform(toSCurveSpace(math.abs(axisValue))))
+		point = point * sign
+		return math.clamp(point, -1, 1)
+	end
+	return Vector2.new(onAxis(thumbstickPosition.X), onAxis(thumbstickPosition.Y))
+end
+
 local function isFinite(num: number): boolean
 	return num == num and num ~= 1 / 0 and num ~= -1 / 0
 end
 
-local humanoidCache = {}
-local function findPlayerHumanoid(player)
+local function findPlayerHumanoid(player: Player): Humanoid?
 	local character = player and player.Character
 	if character then
 		local resultHumanoid = humanoidCache[player]
@@ -110,8 +308,8 @@ local function findPlayerHumanoid(player)
 			return humanoid
 		end
 	end
+	return nil
 end
-
 
 -- Reset the camera look vector when the camera is enabled for the first time
 local function layoutGestureArea(portraitMode)
@@ -127,24 +325,8 @@ local function layoutGestureArea(portraitMode)
 end
 
 -- Setup gesture area that camera uses while DynamicThumbstick is enabled
-local function OnCharacterAdded(character)
+function onCharacterAdded(character: Model)
 	if UserInputService.TouchEnabled then
-		for _, child in ipairs(LocalPlayer.Character:GetChildren()) do
-			if child:IsA("Tool") then
-				IsAToolEquipped = true
-			end
-		end
-		character.ChildAdded:Connect(function(child)
-			if child:IsA("Tool") then
-				IsAToolEquipped = true
-			end
-		end)
-		character.ChildRemoved:Connect(function(child)
-			if child:IsA("Tool") then
-				IsAToolEquipped = false
-			end
-		end)
-
 		if PlayerGui then
 			local TouchGui = PlayerGui:FindFirstChild("TouchGui")
 			if TouchGui and TouchGui:WaitForChild("gestureArea", 0.5) then
@@ -167,12 +349,12 @@ local function OnCharacterAdded(character)
 	end
 end
 
-if LocalPlayer then
-	if LocalPlayer.Character ~= nil then
-		OnCharacterAdded(LocalPlayer.Character)
+if PlayersService.LocalPlayer then
+	if PlayersService.LocalPlayer.Character ~= nil then
+		onCharacterAdded(PlayersService.LocalPlayer.Character)
 	end
-	LocalPlayer.CharacterAdded:Connect(function(character)
-		OnCharacterAdded(character)
+	PlayersService.LocalPlayer.CharacterAdded:Connect(function(character)
+		onCharacterAdded(character)
 	end)
 end
 
@@ -180,14 +362,14 @@ local function getRenderCFrame(part: BasePart): CFrame
 	return (part :: any):GetRenderCFrame()
 end
 
-local CameraController = {}
+local CameraController: CameraController = {} :: any
 CameraController.__index = CameraController
 
-function CameraController:GetActivateValue()
+function CameraController:GetActivateValue(): number
 	return 0.7
 end
 
-function CameraController:IsPortraitMode()
+function CameraController:IsPortraitMode(): boolean
 	return PORTRAIT_MODE
 end
 
@@ -202,7 +384,7 @@ function CameraController:GetRotateAmountValue(vrRotationIntensity: string): Vec
 	end
 	return ZERO_VECTOR2
 end
-function CameraController:GetRepeatDelayValue(vrRotationIntensity)
+function CameraController:GetRepeatDelayValue(vrRotationIntensity: string): number
 	vrRotationIntensity = vrRotationIntensity or StarterGui:GetCore("VRRotationIntensity")
 	if vrRotationIntensity then
 		if vrRotationIntensity == "Low" then
@@ -269,7 +451,7 @@ end
 
 function CameraController:GetHumanoidRootPart(): BasePart?
 	local humanoid = self:GetHumanoid()
-	return humanoid and humanoid.Torso
+	return humanoid and (humanoid :: any).Torso
 end
 
 function CameraController:_GetRenderCFrame(part: BasePart): CFrame
@@ -333,7 +515,7 @@ function CameraController:GetSubjectPosition(): Vector3?
 			local subjectCFrame = getRenderCFrame(cameraSubject)
 			result = subjectCFrame.Position
 		elseif cameraSubject:IsA("Model") then
-			result = cameraSubject:GetModelCFrame().Position
+			result = (cameraSubject :: any):GetModelCFrame().Position
 		end
 	end
 	self._LastSubject = cameraSubject
@@ -342,7 +524,7 @@ function CameraController:GetSubjectPosition(): Vector3?
 end
 
 function CameraController:ResetCameraLook() 
-
+	return nil
 end
 
 function CameraController:GetCameraLook(): Vector3
@@ -352,10 +534,9 @@ end
 function CameraController:GetCameraZoom(): number
 	if self._CurrentZoom == nil then
 		local player = PlayersService.LocalPlayer
-		self._CurrentZoom = player
-				and math.clamp(this.DefaultZoom, player.CameraMinZoomDistance, player.CameraMaxZoomDistance)
-			or this.DefaultZoom
+		self._CurrentZoom = if player then math.clamp(self.DefaultZoom, player.CameraMinZoomDistance, player.CameraMaxZoomDistance) else self.DefaultZoom
 	end
+	assert(self._CurrentZoom ~= nil)
 	return self._CurrentZoom
 end
 
@@ -364,11 +545,12 @@ function CameraController:GetCameraActualZoom(): number
 	if camera then
 		return (camera.CoordinateFrame.Position - camera.Focus.Position).Magnitude
 	end
+	error("Bad camera")
 end
 
 function CameraController:GetCameraHeight(): number
-	if VRService.VREnabled and not this:IsInFirstPerson() then
-		local zoom = this:GetCameraZoom()
+	if VRService.VREnabled and not self:IsInFirstPerson() then
+		local zoom = self:GetCameraZoom()
 		return math.sin(VR_ANGLE) * zoom
 	end
 	return 0
@@ -394,8 +576,8 @@ end
 
 
 function CameraController:ScreenTranslationToAngle(translationVector: Vector2): Vector2
-	local screenX = this:ViewSizeX()
-	local screenY = this:ViewSizeY()
+	local screenX = self:ViewSizeX()
+	local screenY = self:ViewSizeY()
 	local xTheta = (translationVector.X / screenX)
 	local yTheta = (translationVector.Y / screenY)
 	return Vector2.new(xTheta, yTheta)
@@ -458,9 +640,10 @@ function CameraController:UpdateMouseBehavior()
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		end
 	end
+	return nil
 end
 
-function CameraController:ZoomCamera(desiredZoom)
+function CameraController:ZoomCamera(desiredZoom: number): number
 	local player = PlayersService.LocalPlayer
 	if player then
 		if player.CameraMode == Enum.CameraMode.LockFirstPerson then
@@ -503,8 +686,8 @@ function CameraController:RK4Integrator(position: number, velocity: number, t: n
 	return positionResult, velocityResult
 end
 
-function CameraController:ZoomCameraBy(zoomScale)
-	local zoom = this:GetCameraActualZoom()
+function CameraController:ZoomCameraBy(zoomScale: number): number
+	local zoom = self:GetCameraActualZoom()
 
 	if zoom then
 		-- Can break into more steps to get more accurate integration
@@ -518,14 +701,16 @@ function CameraController:ZoomCameraFixedBy(zoomIncrement)
 	return self:ZoomCamera(self:GetCameraZoom() + zoomIncrement)
 end
 
-function CameraController:Update() end
+function CameraController:Update()
+	return nil
+end
 
 ----- VR STUFF ------
 function CameraController:ApplyVRTransform()
 	if not VRService.VREnabled then
 		return
 	end
-	--we only want this to happen in first person VR
+	--we only want self to happen in first person VR
 	local player = PlayersService.LocalPlayer
 	if
 		not (
@@ -542,7 +727,7 @@ function CameraController:ApplyVRTransform()
 	local cameraSubject = camera.CameraSubject
 	local isInVehicle = cameraSubject and cameraSubject:IsA("VehicleSeat")
 
-	if this:IsInFirstPerson() and not isInVehicle then
+	if self:IsInFirstPerson() and not isInVehicle then
 		local vrFrame = VRService:GetUserCFrame(Enum.UserCFrame.Head)
 		local vrRotation = vrFrame - vrFrame.Position
 		local rootJoint = player.Character.HumanoidRootPart.RootJoint
@@ -552,15 +737,19 @@ function CameraController:ApplyVRTransform()
 		local rootJoint = player.Character.HumanoidRootPart.RootJoint
 		rootJoint.C0 = CFrame.new(0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 1, 0)
 	end
+	return nil
 end
 
 
-function CameraController:ShouldUseVRRotation()
+function CameraController:ShouldUseVRRotation(): boolean
 	if not VRService.VREnabled then
 		return false
 	end
-	if not self._VRRotationIntensityExists and tick() - self._LastVrRotationCheck < 1 then
-		return false
+	if not self._VRRotationIntensityExists then
+		assert(self._LastVrRotationCheck ~= nil)
+		if tick() - self._LastVrRotationCheck < 1 then
+			return false
+		end
 	end
 
 	local success, vrRotationIntensity = pcall(function()
@@ -572,7 +761,7 @@ function CameraController:ShouldUseVRRotation()
 	return success and vrRotationIntensity ~= nil and vrRotationIntensity ~= "Smooth"
 end
 
-function CameraController:GetVRRotationInput()
+function CameraController:GetVRRotationInput(): Vector2
 	local vrRotateSum = ZERO_VECTOR2
 
 	local vrRotationIntensity = StarterGui:GetCore("VRRotationIntensity")
@@ -592,7 +781,7 @@ function CameraController:GetVRRotationInput()
 	elseif math.abs(vrGamepadRotation.X) < self:GetActivateValue() - 0.1 then
 		self._VRRotateKeyCooldown[Enum.KeyCode.Thumbstick2] = nil
 	end
-	if self.TurningLeft then
+	if self._TurningLeft then
 		if delayExpired or not self._VRRotateKeyCooldown[Enum.KeyCode.Left] then
 			vrRotateSum = vrRotateSum - self:GetRotateAmountValue(vrRotationIntensity)
 			self._VRRotateKeyCooldown[Enum.KeyCode.Left] = true
@@ -600,7 +789,7 @@ function CameraController:GetVRRotationInput()
 	else
 		self._VRRotateKeyCooldown[Enum.KeyCode.Left] = nil
 	end
-	if self.TurningRight then
+	if self._TurningRight then
 		if delayExpired or not self._VRRotateKeyCooldown[Enum.KeyCode.Right] then
 			vrRotateSum = vrRotateSum + self:GetRotateAmountValue(vrRotationIntensity)
 			self._VRRotateKeyCooldown[Enum.KeyCode.Right] = true
@@ -616,8 +805,66 @@ function CameraController:GetVRRotationInput()
 	return vrRotateSum
 end
 
+function CameraController:UpdateGamepad(): Vector2
+	local gamepadPan = self._GamepadPanningCamera
+	if gamepadPan and (hasGameLoaded or not VRService.VREnabled) then
+		gamepadPan = gamepadLinearToCurve(gamepadPan)
+		local currentTime = tick()
+		if gamepadPan.X ~= 0 or gamepadPan.Y ~= 0 then
+			self._UserPanningTheCamera = true
+		elseif gamepadPan == ZERO_VECTOR2 then
+			self._LastThumbstickRotate = nil
+			if self._LastThumbstickPos == ZERO_VECTOR2 then
+				self._CurrentSpeed = 0
+			end
+		end
 
-function CameraController:_CancelCameraFreeze(keepConstraints)
+		local finalConstant = 0
+
+		if self._LastThumbstickRotate then
+			if VRService.VREnabled then
+				self._CurrentSpeed = self._VRMaxSpeed
+			else
+				local elapsedTime = (currentTime - self._LastThumbstickRotate) * 10
+				self._CurrentSpeed = self._CurrentSpeed + (self._MaxSpeed * ((elapsedTime * elapsedTime) / self._NumOfSeconds))
+
+				if self._CurrentSpeed > self._MaxSpeed then
+					self._CurrentSpeed = self._MaxSpeed
+				end
+
+				if self._LastVelocity then
+					local velocity = (gamepadPan - self._LastThumbstickPos) / (currentTime - self._LastThumbstickRotate)
+					local velocityDeltaMag = (velocity - self._LastVelocity).Magnitude
+
+					if velocityDeltaMag > 12 then
+						self._CurrentSpeed = self._CurrentSpeed * (20 / velocityDeltaMag)
+						if self._CurrentSpeed > self._MaxSpeed then
+							self._CurrentSpeed = self._MaxSpeed
+						end
+					end
+				end
+			end
+
+			local success, gamepadCameraSensitivity = pcall(function()
+				return Settings.GameSettings.GamepadCameraSensitivity
+			end)
+			finalConstant = success and (gamepadCameraSensitivity * self._CurrentSpeed) or self._CurrentSpeed
+			self._LastVelocity = (gamepadPan - self._LastThumbstickPos) / (currentTime - self._LastThumbstickRotate)
+		end
+
+		self._LastThumbstickPos = gamepadPan
+		self._LastThumbstickRotate = currentTime
+
+		return Vector2.new(
+			gamepadPan.X * finalConstant,
+			gamepadPan.Y * finalConstant * self._YSensitivity * Settings.GameSettings:GetCameraYInvertValue()
+		)
+	end
+
+	return ZERO_VECTOR2
+end
+
+function CameraController:_CancelCameraFreeze(keepConstraints: boolean)
 	if not keepConstraints then
 		self._CameraTranslationConstraints =
 			Vector3.new(self._CameraTranslationConstraints.X, 1, self._CameraTranslationConstraints.Z)
@@ -626,6 +873,7 @@ function CameraController:_CancelCameraFreeze(keepConstraints)
 		self._TrackingHumanoid = nil
 		self._CameraFrozen = false
 	end
+	return nil
 end
 
 function CameraController:_StartCameraFreeze(subjectPosition: Vector3, humanoidToTrack: Humanoid)
@@ -636,10 +884,12 @@ function CameraController:_StartCameraFreeze(subjectPosition: Vector3, humanoidT
 			Vector3.new(self._CameraTranslationConstraints.X, 0, self._CameraTranslationConstraints.Z)
 		self._CameraFrozen = true
 	end
+	return nil
 end
 
-function CameraController:_RescaleCameraOffset(newScaleFactor: Vector3)
+function CameraController:_RescaleCameraOffset(newScaleFactor: number)
 	self.R15HeadHeight = R15_HEAD_OFFSET * newScaleFactor
+	return nil
 end
 
 function CameraController:_OnHumanoidSubjectChildAdded(child: Instance)
@@ -648,10 +898,11 @@ function CameraController:_OnHumanoidSubjectChildAdded(child: Instance)
 			self._HeightScaleChangedConn:Disconnect()
 		end
 		self._HeightScaleChangedConn = child.Changed:Connect(function()
-			self:_RescaleCameraOffset()
+			self:_RescaleCameraOffset(child.Value)
 		end)
 		self:_RescaleCameraOffset(child.Value)
 	end
+	return nil
 end
 
 function CameraController:_OnHumanoidSubjectChildRemoved(child: Instance)
@@ -662,6 +913,7 @@ function CameraController:_OnHumanoidSubjectChildRemoved(child: Instance)
 			self._HeightScaleChangedConn = nil
 		end
 	end
+	return nil
 end
 
 function CameraController:_OnNewCameraSubject()
@@ -684,31 +936,34 @@ function CameraController:_OnNewCameraSubject()
 
 	local humanoid = workspace.CurrentCamera and workspace.CurrentCamera.CameraSubject
 	if self._TrackingHumanoid ~= humanoid then
-		self:_CancelCameraFreeze()
+		self:_CancelCameraFreeze(false)
 	end
 	if humanoid and humanoid:IsA("Humanoid") then
-		self._HumanoidChildAddedConn = humanoid.ChildAdded:Connect(function()
-			self:_OnHumanoidSubjectChildAdded()
+		self._HumanoidChildAddedConn = humanoid.ChildAdded:Connect(function(child: Instance)
+			self:_OnHumanoidSubjectChildAdded(child)
 		end)
-		self._HumanoidChildRemovedConn = humanoid.ChildRemoved:Connect(function()
-			self:_OnHumanoidSubjectChildRemoved()
+		self._HumanoidChildRemovedConn = humanoid.ChildRemoved:Connect(function(child: Instance)
+			self:_OnHumanoidSubjectChildRemoved(child)
 		end)
 		for _, child: Instance in ipairs(humanoid:GetChildren()) do
 			self:_OnHumanoidSubjectChildAdded(child)
 		end
 
-		self._SubjectStateChangedConn = humanoid.StateChanged:Connect(function(oldState, newState)
+		self._SubjectStateChangedConn = humanoid.StateChanged:Connect(function(oldState: Enum.HumanoidStateType, newState: Enum.HumanoidStateType)
 			if
 				VRService.VREnabled
 				and newState == Enum.HumanoidStateType.Jumping
-				and not this:IsInFirstPerson()
+				and not self:IsInFirstPerson()
 			then
-				self:_StartCameraFreeze(this:GetSubjectPosition(), humanoid)
+				local position = self:GetSubjectPosition()
+				assert(position ~= nil)
+				self:_StartCameraFreeze(position, humanoid)
 			elseif newState ~= Enum.HumanoidStateType.Jumping and newState ~= Enum.HumanoidStateType.Freefall then
 				self:_CancelCameraFreeze(true)
 			end
 		end)
 	end
+	return nil
 end
 
 function CameraController:_OnCurrentCameraChanged()
@@ -723,12 +978,12 @@ function CameraController:_OnCurrentCameraChanged()
 			end)
 		self:_OnNewCameraSubject()
 	end
+	return nil
 end
 
-function CameraController:GetVRFocus(subjectPosition, timeDelta)
+function CameraController:GetVRFocus(subjectPosition: Vector3, timeDelta: number): CFrame
 	local newFocus = nil
 
-	local camera = workspace.CurrentCamera
 	local lastFocus = self.LastCameraFocus or subjectPosition
 	if not self._CameraFrozen then
 		self._CameraTranslationConstraints = Vector3.new(
@@ -748,30 +1003,29 @@ function CameraController:GetVRFocus(subjectPosition, timeDelta)
 	else
 		newFocus = CFrame.new(
 			Vector3.new(subjectPosition.X, lastFocus.Y, subjectPosition.Z)
-				:lerp(subjectPosition, self._CameraTranslationConstraints.Y)
+				:Lerp(subjectPosition, self._CameraTranslationConstraints.Y)
 		)
 	end
 
 	if self._CameraFrozen then
 		-- No longer in 3rd person
 		if self:IsInFirstPerson() then -- not VRService.VREnabled
-			cancelCameraFreeze()
+			self:_CancelCameraFreeze(false)
 		end
 		-- This case you jumped off a cliff and want to keep your character in view
 		-- 0.5 is to fix floating point error when not jumping off cliffs
 		if self._HumanoidJumpOrigin and subjectPosition.Y < (self._HumanoidJumpOrigin.Y - 0.5) then
-			cancelCameraFreeze()
+			self:_CancelCameraFreeze(false)
 		end
 	end
 
 	return newFocus
 end
 
-
-function CameraController:_OnTouchBegan(input, processed)
+function CameraController:_OnTouchBegan(input: InputObject, processed: boolean)
 	--If self._IsDynamicThumbstickEnabled, then only process TouchBegan event if it starts in gestureArea
 
-	local dtFrame = self:_GetDynamicThumbstickFrame()
+	-- local dtFrame = self:_GetDynamicThumbstickFrame()
 
 	local isDynamicThumbstickUsingThisInput = false
 	if self._IsDynamicThumbstickEnabled then
@@ -779,95 +1033,94 @@ function CameraController:_OnTouchBegan(input, processed)
 		if ControlScript then
 			local MasterControl = ControlScript:FindFirstChild("MasterControl")
 			if MasterControl then
-				local DynamicThumbstickModule = MasterControl:FindFirstChild("DynamicThumbstick")
-				if DynamicThumbstickModule then
-					DynamicThumbstickModule = require(DynamicThumbstickModule)
-					local dynamicInputObject = DynamicThumbstickModule:GetInputObject()
-					isDynamicThumbstickUsingThisInput = (dynamicInputObject == input)
-				end
+				local dynamicInputObject = getDynamicInputObject()
+				isDynamicThumbstickUsingThisInput = (dynamicInputObject == input)
 			end
 		end
 	end
 
 	if not isDynamicThumbstickUsingThisInput then
-		fingerTouches[input] = processed
+		self._FingerTouches[input] = processed
 		if not processed then
-			inputStartPositions[input] = input.Position
-			inputStartTimes[input] = tick()
-			NumUnsunkTouches = NumUnsunkTouches + 1
+			self._InputStartPositions[input] = input.Position
+			self._InputStartTimes[input] = tick()
+			self._NumUnsunkTouches += 1
 		end
 	end
+	return nil
 end
 
-function CameraController:_OnTouchChanged(input, processed)
-	if fingerTouches[input] == nil then
+function CameraController:_OnTouchChanged(input: InputObject, processed: boolean)
+	if self._FingerTouches[input] == nil then
 		if self._IsDynamicThumbstickEnabled then
 			return
 		end
-		fingerTouches[input] = processed
+		self._FingerTouches[input] = processed
 		if not processed then
-			NumUnsunkTouches = NumUnsunkTouches + 1
+			self._NumUnsunkTouches = self._NumUnsunkTouches + 1
 		end
 	end
 
-	if NumUnsunkTouches == 1 then
-		if fingerTouches[input] == false then
-			panBeginLook = panBeginLook or this:GetCameraLook()
-			startPos = startPos or input.Position
-			lastPos = lastPos or startPos
-			this.UserPanningTheCamera = true
+	if self._NumUnsunkTouches == 1 then
+		if self._FingerTouches[input] == false then
+			self._PanBeginLook = self._PanBeginLook or self:GetCameraLook()
+			self._StartPos = self._StartPos or input.Position
+			self._LastPos = self._LastPos or self._StartPos
+			self._UserPanningTheCamera = true
+			assert(self._LastPos ~= nil)
+			local delta = input.Position - self._LastPos
+			
+			local flatDelta = Vector2.new(delta.X, delta.Y * Settings.GameSettings:GetCameraYInvertValue())
 
-			local delta = input.Position - lastPos
-
-			delta = Vector2.new(delta.X, delta.Y * Settings.GameSettings:GetCameraYInvertValue())
-
-			if this.PanEnabled then
-				local desiredXYVector = this:ScreenTranslationToAngle(delta) * TOUCH_SENSITIVTY
-				this.RotateInput = this.RotateInput + desiredXYVector
+			if self._PanEnabled then
+				local desiredXYVector = self:ScreenTranslationToAngle(flatDelta) * TOUCH_SENSITIVTY
+				self.RotateInput = self.RotateInput + desiredXYVector
 			end
 
-			lastPos = input.Position
+			self._LastPos = input.Position
 		end
 	else
-		panBeginLook = nil
-		startPos = nil
-		lastPos = nil
-		this.UserPanningTheCamera = false
+		self._PanBeginLook = nil
+		self._StartPos = nil
+		self._LastPos = nil
+		self._UserPanningTheCamera = false
 	end
-	if NumUnsunkTouches == 2 then
+	if self._NumUnsunkTouches == 2 then
 		local unsunkTouches = {}
-		for touch, wasSunk in pairs(fingerTouches) do
+		for touch, wasSunk in pairs(self._FingerTouches) do
 			if not wasSunk then
 				table.insert(unsunkTouches, touch)
 			end
 		end
 		if #unsunkTouches == 2 then
 			local difference = (unsunkTouches[1].Position - unsunkTouches[2].Position).Magnitude
-			if StartingDiff and pinchBeginZoom then
-				local scale = difference / math.max(0.01, StartingDiff)
+			if self._StartingDiff and self._PinchBeginZoom then
+				local scale = difference / math.max(0.01, self._StartingDiff)
 				local clampedScale = math.clamp(scale, 0.1, 10)
-				if this.ZoomEnabled then
-					this:ZoomCamera(pinchBeginZoom / clampedScale)
+				if self._ZoomEnabled then
+					self:ZoomCamera(self._PinchBeginZoom / clampedScale)
 				end
 			else
-				StartingDiff = difference
-				pinchBeginZoom = this:GetCameraActualZoom()
+				self._StartingDiff = difference
+				self._PinchBeginZoom = self:GetCameraActualZoom()
 			end
 		end
 	else
-		StartingDiff = nil
-		pinchBeginZoom = nil
+		self._StartingDiff = nil
+		self._PinchBeginZoom = nil
 	end
+	return nil
 end
 
-function CameraController:_CalcLookBehindRotateInput(torso)
+function CameraController:_CalcLookBehindRotateInput(torso: BasePart): Vector2
 	if torso then
-		local newDesiredLook = (torso.CFrame.lookVector - Vector3.new(
+		local newDesiredLook = (torso.CFrame.LookVector - Vector3.new(
 			0,
-			math.sin(math.rad(DEFAULT_CAMERA_ANGLE), 0)
+			math.sin(math.rad(DEFAULT_CAMERA_ANGLE)), 
+			0
 		)).Unit
-		local horizontalShift = findAngleBetweenXZVectors(newDesiredLook, this:GetCameraLook())
-		local vertShift = math.asin(this:GetCameraLook().Y) - math.asin(newDesiredLook.Y)
+		local horizontalShift = findAngleBetweenXZVectors(newDesiredLook, self:GetCameraLook())
+		local vertShift = math.asin(self:GetCameraLook().Y) - math.asin(newDesiredLook.Y)
 		if not isFinite(horizontalShift) then
 			horizontalShift = 0
 		end
@@ -877,15 +1130,15 @@ function CameraController:_CalcLookBehindRotateInput(torso)
 
 		return Vector2.new(horizontalShift, vertShift)
 	end
-	return nil
+	error("Bad torso")
 end
 
-function CameraController:_IsTouchTap(input)
-	-- We can't make the assumption that the input exists in the inputStartPositions because we may have switched from a different camera type.
-	if inputStartPositions[input] then
-		local posDelta = (inputStartPositions[input] - input.Position).Magnitude
+function CameraController:_IsTouchTap(input: InputObject): boolean
+	-- We can't make the assumption that the input exists in the self._InputStartPositions because we may have switched from a different camera type.
+	if self._InputStartPositions[input] then
+		local posDelta = (self._InputStartPositions[input] - input.Position).Magnitude
 		if posDelta < MAX_TAP_POS_DELTA then
-			local timeDelta = inputStartTimes[input] - tick()
+			local timeDelta = self._InputStartTimes[input] - tick()
 			if timeDelta < MAX_TAP_TIME_DELTA then
 				return true
 			end
@@ -894,109 +1147,117 @@ function CameraController:_IsTouchTap(input)
 	return false
 end
 
-function CameraController:_OnTouchEnded(input, processed)
-	if fingerTouches[input] == false then
-		if NumUnsunkTouches == 1 then
-			panBeginLook = nil
-			startPos = nil
-			lastPos = nil
-			this.UserPanningTheCamera = false
-		elseif NumUnsunkTouches == 2 then
-			StartingDiff = nil
-			pinchBeginZoom = nil
+function CameraController:_OnTouchEnded(input: InputObject, processed: boolean)
+	if self._FingerTouches[input] == false then
+		if self._NumUnsunkTouches == 1 then
+			self._PanBeginLook = nil
+			self._StartPos = nil
+			self._LastPos = nil
+			self._UserPanningTheCamera = false
+		elseif self._NumUnsunkTouches == 2 then
+			self._StartingDiff = nil
+			self._PinchBeginZoom = nil
 		end
 	end
 
-	if fingerTouches[input] ~= nil and fingerTouches[input] == false then
-		NumUnsunkTouches = NumUnsunkTouches - 1
+	if self._FingerTouches[input] ~= nil and self._FingerTouches[input] == false then
+		self._NumUnsunkTouches = self._NumUnsunkTouches - 1
 	end
-	fingerTouches[input] = nil
-	inputStartPositions[input] = nil
-	inputStartTimes[input] = nil
+	self._FingerTouches[input] = nil
+	self._InputStartPositions[input] = nil
+	self._InputStartTimes[input] = nil
+	return nil
 end
 
-function CameraController:_OnMousePanButtonPressed(input, processed)
+function CameraController:_OnMousePanButtonPressed(input: InputObject, processed: boolean)
 	if processed then
 		return
 	end
-	this:UpdateMouseBehavior()
-	panBeginLook = panBeginLook or this:GetCameraLook()
-	startPos = startPos or input.Position
-	lastPos = lastPos or startPos
-	this.UserPanningTheCamera = true
+	self:UpdateMouseBehavior()
+	self._PanBeginLook = self._PanBeginLook or self:GetCameraLook()
+	self._StartPos = self._StartPos or input.Position
+	self._LastPos = self._LastPos or self._StartPos
+	self._UserPanningTheCamera = true
+	return nil
 end
 
-function CameraController:_OnMousePanButtonReleased(input, processed)
-	this:UpdateMouseBehavior()
+function CameraController:_OnMousePanButtonReleased(input: InputObject?, processed: boolean?)
+	self:UpdateMouseBehavior()
 	if not (self._IsRightMouseDown or self._IsMiddleMouseDown) then
-		panBeginLook = nil
-		startPos = nil
-		lastPos = nil
-		this.UserPanningTheCamera = false
+		self._PanBeginLook = nil
+		self._StartPos = nil
+		self._LastPos = nil
+		self._UserPanningTheCamera = false
 	end
+	return nil
 end
 
-function CameraController:_OnMouse2Down(input, processed)
+function CameraController:_OnMouse2Down(input: InputObject, processed: boolean)
 	if processed then
 		return
 	end
 
 	self._IsRightMouseDown = true
 	self:_OnMousePanButtonPressed(input, processed)
+	return nil
 end
 
-function CameraController:_OnMouse2Up(input, processed)
+function CameraController:_OnMouse2Up(input: InputObject, processed: boolean)
 	self._IsRightMouseDown = false
 	self:_OnMousePanButtonReleased(input, processed)
+	return nil
 end
 
-function CameraController:_OnMouse3Down(input, processed)
+function CameraController:_OnMouse3Down(input: InputObject, processed: boolean)
 	if processed then
 		return
 	end
 
 	self._IsMiddleMouseDown = true
 	self:_OnMousePanButtonPressed(input, processed)
+	return nil
 end
 
-function CameraController:_OnMouse3Up(input, processed)
+function CameraController:_OnMouse3Up(input: InputObject, processed: boolean)
 	self._IsMiddleMouseDown = false
-	OnMousePanButtonReleased(input, processed)
+	self:_OnMousePanButtonReleased(input, processed)
+	return nil
 end
 
-function CameraController:_OnMouseMoved(input, processed)
+function CameraController:_OnMouseMoved(input: InputObject, processed: boolean)
 	if not hasGameLoaded and VRService.VREnabled then
 		return
 	end
 
-	local inputDelta = input.Delta
-	inputDelta = Vector2.new(inputDelta.X, inputDelta.Y * Settings.GameSettings:GetCameraYInvertValue())
+	local inputDelta3 = input.Delta
+	local inputDelta = Vector2.new(inputDelta3.X, inputDelta3.Y * Settings.GameSettings:GetCameraYInvertValue())
 
-	if startPos and lastPos and panBeginLook then
-		local currPos = lastPos + input.Delta
-		local totalTrans = currPos - startPos
-		if this.PanEnabled then
-			local desiredXYVector = this:MouseTranslationToAngle(inputDelta) * MOUSE_SENSITIVITY
-			this.RotateInput = this.RotateInput + desiredXYVector
+	if self._StartPos and self._LastPos and self._PanBeginLook then
+		local currPos = self._LastPos + input.Delta
+		if self._PanEnabled then
+			local desiredXYVector = self:MouseTranslationToAngle(inputDelta) * MOUSE_SENSITIVITY
+			self.RotateInput = self.RotateInput + desiredXYVector
 		end
-		lastPos = currPos
-	elseif this:IsInFirstPerson() or this:GetShiftLock() then
-		if this.PanEnabled then
-			local desiredXYVector = this:MouseTranslationToAngle(inputDelta) * MOUSE_SENSITIVITY
-			this.RotateInput = this.RotateInput + desiredXYVector
+		self._LastPos = currPos
+	elseif self:IsInFirstPerson() or self:GetShiftLock() then
+		if self._PanEnabled then
+			local desiredXYVector = self:MouseTranslationToAngle(inputDelta) * MOUSE_SENSITIVITY
+			self.RotateInput = self.RotateInput + desiredXYVector
 		end
 	end
+	return nil
 end
 
-function CameraController:_OnMouseWheel(input, processed)
+function CameraController:_OnMouseWheel(input: InputObject, processed: boolean)
 	if not hasGameLoaded and VRService.VREnabled then
 		return
 	end
 	if not processed then
-		if this.ZoomEnabled then
-			this:ZoomCameraBy(math.clamp(-input.Position.Z, -1, 1) * 1.4)
+		if self._ZoomEnabled then
+			self:ZoomCameraBy(math.clamp(-input.Position.Z, -1, 1) * 1.4)
 		end
 	end
+	return nil
 end
 
 
@@ -1010,120 +1271,538 @@ function CameraController:_RotateVectorByAngleAndRound(camLook: Vector3, rotateA
 	return 0
 end
 
-function CameraController:_OnKeyDown(input, processed)
+function CameraController:_OnKeyDown(input: InputObject, processed: boolean)
 	if not hasGameLoaded and VRService.VREnabled then
 		return
 	end
 	if processed then
 		return
 	end
-	if this.ZoomEnabled then
+	if self._ZoomEnabled then
 		if input.KeyCode == Enum.KeyCode.I then
-			this:ZoomCameraBy(-5)
+			self:ZoomCameraBy(-5)
 		elseif input.KeyCode == Enum.KeyCode.O then
-			this:ZoomCameraBy(5)
+			self:ZoomCameraBy(5)
 		end
 	end
-	if panBeginLook == nil and this.KeyPanEnabled then
+	if self._PanBeginLook == nil and self._KeyPanEnabled then
 		if input.KeyCode == Enum.KeyCode.Left then
-			this.TurningLeft = true
+			self._TurningLeft = true
 		elseif input.KeyCode == Enum.KeyCode.Right then
-			this.TurningRight = true
+			self._TurningRight = true
 		elseif input.KeyCode == Enum.KeyCode.Comma then
-			local angle = rotateVectorByAngleAndRound(
-				this:GetCameraLook() * Vector3.new(1, 0, 1),
+			local angle = self:_RotateVectorByAngleAndRound(
+				self:GetCameraLook() * Vector3.new(1, 0, 1),
 				-QUARTER_PI * (3 / 4),
 				QUARTER_PI
 			)
 			if angle ~= 0 then
-				this.RotateInput = this.RotateInput + Vector2.new(angle, 0)
-				this.LastUserPanCamera = tick()
-				this.LastCameraTransform = nil
+				self.RotateInput = self.RotateInput + Vector2.new(angle, 0)
+				self._LastUserPanCamera = tick()
+				self._LastCameraTransform = nil
 			end
 		elseif input.KeyCode == Enum.KeyCode.Period then
-			local angle = rotateVectorByAngleAndRound(
-				this:GetCameraLook() * Vector3.new(1, 0, 1),
+			local angle = self:_RotateVectorByAngleAndRound(
+				self:GetCameraLook() * Vector3.new(1, 0, 1),
 				QUARTER_PI * (3 / 4),
 				QUARTER_PI
 			)
 			if angle ~= 0 then
-				this.RotateInput = this.RotateInput + Vector2.new(angle, 0)
-				this.LastUserPanCamera = tick()
-				this.LastCameraTransform = nil
+				self.RotateInput = self.RotateInput + Vector2.new(angle, 0)
+				self._LastUserPanCamera = tick()
+				self._LastCameraTransform = nil
 			end
 		elseif input.KeyCode == Enum.KeyCode.PageUp then
 			--elseif input.KeyCode == Enum.KeyCode.Home then
-			this.RotateInput = this.RotateInput + Vector2.new(0, math.rad(15))
-			this.LastCameraTransform = nil
+			self.RotateInput = self.RotateInput + Vector2.new(0, math.rad(15))
+			self._LastCameraTransform = nil
 		elseif input.KeyCode == Enum.KeyCode.PageDown then
 			--elseif input.KeyCode == Enum.KeyCode.End then
-			this.RotateInput = this.RotateInput + Vector2.new(0, math.rad(-15))
-			this.LastCameraTransform = nil
+			self.RotateInput = self.RotateInput + Vector2.new(0, math.rad(-15))
+			self._LastCameraTransform = nil
 		end
 	end
+	return nil
 end
 
-function CameraController:_OnKeyUp(input, processed)
+function CameraController:_OnKeyUp(input: InputObject, processed: boolean)
 	if input.KeyCode == Enum.KeyCode.Left then
-		this.TurningLeft = false
+		self._TurningLeft = false
 	elseif input.KeyCode == Enum.KeyCode.Right then
-		this.TurningRight = false
+		self._TurningRight = false
 	end
+	return nil
 end
 
 function CameraController:_OnWindowFocusReleased()
 	self:ResetInputStates()
+	return nil
 end
 
-function CameraController.new()
-	local self = setmetatable({
+function CameraController:DisconnectInputEvents()
+	if self._InputBeganConn then
+		self._InputBeganConn:Disconnect()
+		self._InputBeganConn = nil
+	end
+	if self._InputChangedConn then
+		self._InputChangedConn:Disconnect()
+		self._InputChangedConn = nil
+	end
+	if self._InputEndedConn then
+		self._InputEndedConn:Disconnect()
+		self._InputEndedConn = nil
+	end
+	if self._WindowUnfocusConn then
+		self._WindowUnfocusConn:Disconnect()
+		self._WindowUnfocusConn = nil
+	end
+	if self._MenuOpenedConn then
+		self._MenuOpenedConn:Disconnect()
+		self._MenuOpenedConn = nil
+	end
+	if self._ShiftLockToggleConn then
+		self._ShiftLockToggleConn:Disconnect()
+		self._ShiftLockToggleConn = nil
+	end
+	if self._GamepadConnectedConn then
+		self._GamepadConnectedConn:Disconnect()
+		self._GamepadConnectedConn = nil
+	end
+	if self._GamepadDisconnectedConn then
+		self._GamepadDisconnectedConn:Disconnect()
+		self._GamepadDisconnectedConn = nil
+	end
+	if self._SubjectStateChangedConn then
+		self._SubjectStateChangedConn:Disconnect()
+		self._SubjectStateChangedConn = nil
+	end
+	if self._WorkspaceChangedConn then
+		self._WorkspaceChangedConn:Disconnect()
+		self._WorkspaceChangedConn = nil
+	end
+	if self._TouchActivateConn then
+		self._TouchActivateConn:Disconnect()
+		self._TouchActivateConn = nil
+	end
+
+	self._TurningLeft = false
+	self._TurningRight = false
+	self._LastCameraTransform = nil
+	self.LastSubjectCFrame = nil
+	self._UserPanningTheCamera = false
+	self.RotateInput = Vector2.new()
+	self._GamepadPanningCamera = Vector2.new(0, 0)
+
+	-- Reset input states
+	self._StartPos = nil
+	self._LastPos = nil
+	self._PanBeginLook = nil
+	self._IsRightMouseDown = false
+	self._IsMiddleMouseDown = false
+
+	self._FingerTouches = {}
+	self._NumUnsunkTouches = 0
+
+	self._StartingDiff = nil
+	self._PinchBeginZoom = nil
+
+	-- Unlock mouse for example if right mouse button was being held down
+	if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+	return nil
+end
+
+function CameraController:ResetInputStates()
+	self._IsRightMouseDown = false
+	self._IsMiddleMouseDown = false
+	self._TurningRight = false
+	self._TurningLeft = false
+	self:_OnMousePanButtonReleased() -- self function doesn't seem to actually need parameters
+
+	if UserInputService.TouchEnabled then
+		--[[menu opening was causing serious touch issues
+		self should disable all active touch events if
+		they're active when menu opens.]]
+		for inputObject, value in pairs(self._FingerTouches) do
+			self._FingerTouches[inputObject] = nil
+		end
+		self._PanBeginLook = nil
+		self._StartPos = nil
+		self._LastPos = nil
+		self._UserPanningTheCamera = false
+		self._StartingDiff = nil
+		self._PinchBeginZoom = nil
+		self._NumUnsunkTouches = 0
+	end
+	return nil
+end
+
+
+function CameraController:_GetGamepadPan(name: string, state: Enum.UserInputState, input: InputObject)
+	if state == Enum.UserInputState.Cancel then
+		self._GamepadPanningCamera = ZERO_VECTOR2
+		return
+	end
+
+	if input.UserInputType == self._ActiveGamepad and input.KeyCode == Enum.KeyCode.Thumbstick2 then
+		local inputVector = Vector2.new(input.Position.X, -input.Position.Y)
+		if inputVector.Magnitude > THUMBSTICK_DEADZONE then
+			self._GamepadPanningCamera = Vector2.new(input.Position.X, -input.Position.Y)
+		else
+			self._GamepadPanningCamera = ZERO_VECTOR2
+		end
+	end
+	return nil
+end
+
+function CameraController:_DoGamepadZoom(name: string, state: Enum.UserInputState, input: InputObject)
+	if
+		input.UserInputType == self._ActiveGamepad
+		and input.KeyCode == Enum.KeyCode.ButtonR3
+		and state == Enum.UserInputState.Begin
+	then
+		if self._ZoomEnabled then
+			if self:GetCameraZoom() > 0.5 then
+				self:ZoomCamera(0)
+			else
+				self:ZoomCamera(10)
+			end
+		end
+	end
+	return nil
+end
+
+function CameraController:BindGamepadInputActions()
+	ContextActionService:BindAction("RootCamGamepadPan", self.getGamepadPan, false, Enum.KeyCode.Thumbstick2)
+	ContextActionService:BindAction("RootCamGamepadZoom", self.doGamepadZoom, false, Enum.KeyCode.ButtonR3)
+	return nil
+end
+
+function CameraController:ConnectInputEvents()
+	self._InputBeganConn = UserInputService.InputBegan:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.Touch then
+			self:_OnTouchBegan(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			self:_OnMouse2Down(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+			self:_OnMouse3Down(input, processed)
+		end
+		-- Keyboard
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			self:_OnKeyDown(input, processed)
+		end
+	end)
+
+	self._InputChangedConn = UserInputService.InputChanged:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.Touch then
+			self:_OnTouchChanged(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseMovement then
+			self:_OnMouseMoved(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
+			self:_OnMouseWheel(input, processed)
+		end
+	end)
+
+	self._InputEndedConn = UserInputService.InputEnded:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.Touch then
+			self:_OnTouchEnded(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			self:_OnMouse2Up(input, processed)
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+			self:_OnMouse3Up(input, processed)
+		end
+		-- Keyboard
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			self:_OnKeyUp(input, processed)
+		end
+	end)
+
+	self._WindowUnfocusConn = UserInputService.WindowFocusReleased:Connect(function()
+		self:_OnWindowFocusReleased()
+	end)
+	self._MenuOpenedConn = GuiService.MenuOpened:Connect(function()
+		self:ResetInputStates()
+	end)
+	self._WorkspaceChangedConn = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		self:_OnCurrentCameraChanged()
+	end)
+	if workspace.CurrentCamera then
+		self:_OnCurrentCameraChanged()
+	end
+
+	self._ShiftLockToggleConn = ShiftLockController.OnShiftLockToggled.Event:Connect(function()
+		self:UpdateMouseBehavior()
+	end)
+
+	self.RotateInput = Vector2.new()
+
+	self._ActiveGamepad = nil
+	local function assignActivateGamepad()
+		local connectedGamepads = UserInputService:GetConnectedGamepads()
+		if #connectedGamepads > 0 then
+			for i = 1, #connectedGamepads do
+				if self._ActiveGamepad == nil then
+					self._ActiveGamepad = connectedGamepads[i]
+				elseif connectedGamepads[i].Value < self._ActiveGamepad.Value then
+					self._ActiveGamepad = connectedGamepads[i]
+				end
+			end
+		end
+
+		if self._ActiveGamepad == nil then -- nothing is connected, at least set up for gamepad1
+			self._ActiveGamepad = Enum.UserInputType.Gamepad1
+		end
+	end
+
+	self._GamepadConnectedConn = UserInputService.GamepadDisconnected:Connect(function(gamepadEnum)
+		if self._ActiveGamepad ~= gamepadEnum then
+			return
+		end
+		self._ActiveGamepad = nil
+		assignActivateGamepad()
+	end)
+
+	self._GamepadDisconnectedConn = UserInputService.GamepadConnected:Connect(function(gamepadEnum)
+		if self._ActiveGamepad == nil then
+			assignActivateGamepad()
+		end
+	end)
+
+	self:BindGamepadInputActions()
+
+	assignActivateGamepad()
+
+	-- set mouse behavior
+	self:UpdateMouseBehavior()
+	return nil
+end
+
+--Process self._Tweens related to tap-to-recenter and double-tap-to-zoom
+--Needs to be called from specific cameras on each update
+function CameraController:ProcessTweens()
+	for name, tween in pairs(self._Tweens) do
+		local alpha = math.min(1.0, (tick() - tween.start) / tween.duration)
+		tween.to = tween.func(tween.from, tween.to, alpha)
+		if math.abs(1 - alpha) < 0.0001 then
+			self._Tweens[name] = nil
+		end
+	end
+	return nil
+end
+
+function CameraController:SetEnabled(newState: boolean)
+	if newState ~= self.Enabled then
+		self.Enabled = newState
+		if self.Enabled then
+			self:ConnectInputEvents()
+			self.CFrame = workspace.CurrentCamera.CFrame
+		else
+			self:DisconnectInputEvents()
+		end
+	end
+	return nil
+end
+
+function CameraController:_OnCharacterAdded(player: Player, character: Model)
+
+	local humanoid = findPlayerHumanoid(player)
+	local start = tick()
+	while tick() - start < 0.3 and (humanoid == nil or (humanoid :: any).Torso == nil) do
+		wait()
+		humanoid = findPlayerHumanoid(player)
+	end
+
+	if humanoid and (humanoid :: any).Torso and player.Character == character then
+		local newDesiredLook = ((humanoid :: any).Torso.CFrame.lookVector - Vector3.new(
+			0,
+			math.sin(math.rad(DEFAULT_CAMERA_ANGLE)),
+			0
+		)).Unit
+		local horizontalShift = findAngleBetweenXZVectors(newDesiredLook, self:GetCameraLook())
+		local vertShift = math.asin(self:GetCameraLook().Y) - math.asin(newDesiredLook.Y)
+		if not isFinite(horizontalShift) then
+			horizontalShift = 0
+		end
+		if not isFinite(vertShift) then
+			vertShift = 0
+		end
+		self.RotateInput = Vector2.new(horizontalShift, vertShift)
+
+		-- reset old camera info so follow cam doesn't rotate us
+		self._LastCameraTransform = nil
+	end
+
+	-- Need to wait for camera cframe to update before we zoom in
+	-- Not waiting will force camera to original cframe
+	wait()
+	self:ZoomCamera(self.DefaultZoom)
+	return nil
+end
+
+function CameraController:_OnPlayerAdded(player)
+	player.Changed:Connect(function(prop)
+		if self.Enabled then
+			if prop == "CameraMode" or prop == "CameraMaxZoomDistance" or prop == "CameraMinZoomDistance" then
+				self:ZoomCameraFixedBy(0)
+			end
+		end
+	end)
+	
+	player.CharacterAdded:Connect(function(character)
+		if self.Enabled or setCameraOnSpawn then
+			self:_OnCharacterAdded(player, character)
+			setCameraOnSpawn = false
+		end
+	end)
+	if player.Character then
+		spawn(function()
+			local character: Model? = player.Character
+			assert(character ~= nil)
+			self:_OnCharacterAdded(player, character)
+		end)
+	end
+	return nil
+end
+
+function CameraController:_OnGameLoaded()
+	hasGameLoaded = true
+	return nil
+end
+
+
+function CameraController:_OnDynamicThumbstickEnabled()
+	if UserInputService.TouchEnabled then
+		self._IsDynamicThumbstickEnabled = true
+	end
+	return nil
+end
+
+function CameraController:_OnDynamicThumbstickDisabled()
+	self._IsDynamicThumbstickEnabled = false
+	return nil
+end
+
+function CameraController:_OnGameSettingsTouchMovementModeChanged()
+	if PlayersService.LocalPlayer.DevTouchMovementMode == Enum.DevTouchMovementMode.UserChoice then
+		if Settings.GameSettings.TouchMovementMode.Name == "DynamicThumbstick" then
+			self:_OnDynamicThumbstickEnabled()
+		else
+			self:_OnDynamicThumbstickDisabled()
+		end
+	end
+	return nil
+end
+
+function CameraController:_OnDevTouchMovementModeChanged()
+	if PlayersService.LocalPlayer.DevTouchMovementMode.Name == "DynamicThumbstick" then
+		self:_OnDynamicThumbstickEnabled()
+	else
+		self:_OnGameSettingsTouchMovementModeChanged()
+	end
+	return nil
+end
+
+function CameraController:Destroy()
+	self._Maid:Destroy()
+	self:DisconnectInputEvents()
+	local tabl = setmetatable(self, nil) :: any
+	for k, v in pairs(tabl) do
+		tabl[k] = nil
+	end
+	return nil
+end
+
+function CameraController.new(): CameraController
+	local maid = Maid.new()
+
+	local self: CameraController = setmetatable({
+		_Maid = maid,
 		R15HeadHeight = R15_HEAD_OFFSET,
 		ShiftLock = false,
 		Enabled = false,
+		RotateInput = ZERO_VECTOR2,
+		DefaultZoom = LANDSCAPE_DEFAULT_ZOOM,
+		CFrame = nil,
+
+		_VRRotateKeyCooldown = {} :: {[Enum.KeyCode]: boolean},
+		_Tweens = {} :: {[string]: CameraTween},
+		_FingerTouches = {} :: {[InputObject]: boolean},
+		_InputStartPositions = {} :: {[InputObject]: Vector3},
+		_InputStartTimes = {} :: {[InputObject]: number},
+
 		_IsFirstPerson = false,
 		_IsRightMouseDown = false,
 		_IsMiddleMouseDown = false,
-		RotateInput = ZERO_VECTOR2,
-		DefaultZoom = LANDSCAPE_DEFAULT_ZOOM,
-		_ActiveGamepad = nil,
-		_LastSubject = nil,
+
+		_ActiveGamepad = nil :: Enum.UserInputType?,
+		_LastSubject = nil :: Instance?,
 		_LastSubjectPosition = Vector3.new(0, 5, 0),
-		_Tweens = {},
 		_LastVRRotation = 0,
-		_VRRotateKeyCooldown = {},
+
 		_IsDynamicThumbstickEnabled = false,
-		_DynamicThumbstickFrame = nil,
-		_CameraChangedConn = nil,
-		_WorkspaceCameraChangedConn = nil,
+		_DynamicThumbstickFrame = nil :: Frame?,
+
 		_VRRotationIntensityExists = true,
 		_LastVRRotationCheck = 0,	
 		_CameraTranslationConstraints = Vector3.new(1, 1, 1),
-		_HumanoidJumpOrigin = nil,
-		_TrackingHumanoid = nil,
-		_CameraFrozen = false,
-		_SubjectStateChangedConn = nil,
-		_CameraSubjectChangedConn = nil,
-		_WorkspaceChangedConn = nil,
-		_HumanoidChildAddedConn = nil,
-		_HumanoidChildRemovedConn = nil,
+		_HumanoidJumpOrigin = nil :: Vector3?,
+		_TrackingHumanoid = nil :: Humanoid?,
+
 		_StartPos = nil,
 		_LastPos = nil,
 		_PanBeginLook = nil,
 		_LastTapTime = nil,
 	
-		_FingerTouches = {},
 		_NumUnsunkTouches = 0,
-	
-		_InputStartPositions = {},
-		_InputStartTimes = {},
-	
+		
 		_StartingDiff = nil,
 		_PinchBeginZoom = nil,
-	
-		ZoomEnabled = true,
-		PanEnabled = true,
-		KeyPanEnabled = true,
-	}, CameraController)
+		_CurrentZoom = nil,
+		_LastThumbstickRotate = nil,
+		_LastVrRotationCheck = nil :: number?,
+		_LastUserPanCamera = nil,
+
+		_ZoomEnabled = true,
+		_PanEnabled = true,
+		_KeyPanEnabled = true,
+		_TurningLeft = false,
+		_TurningRight = false,
+		_UserPanningTheCamera = false,
+		_IsInFirstPerson = false,
+		_CameraFrozen = false,
+		_VRMaxSpeed = 4,
+		_NumOfSeconds = 0.7,
+		_CurrentSpeed = 0,
+		_MaxSpeed = 6,
+		_YSensitivity = 0.65,
+
+		_LastThumbstickPos = Vector2.new(0, 0),
+		_LastVelocity = nil :: Vector3?,
+		
+		_InputBeganConn = nil :: RBXScriptConnection?,
+		_InputChangedConn = nil :: RBXScriptConnection?,
+		_InputEndedConn = nil :: RBXScriptConnection?,
+		_WindowUnfocusConn = nil :: RBXScriptConnection?,
+		_MenuOpenedConn = nil :: RBXScriptConnection?,
+		_ShiftLockToggleConn = nil :: RBXScriptConnection?,
+		_GamepadConnectedConn = nil :: RBXScriptConnection?,
+		_GamepadDisconnectedConn = nil :: RBXScriptConnection?,
+		_TouchActivateConn = nil :: RBXScriptConnection?,
+		_SubjectStateChangedConn = nil :: RBXScriptConnection?,
+		_CameraSubjectChangedConn = nil :: RBXScriptConnection?,
+		_WorkspaceChangedConn = nil :: RBXScriptConnection?,
+		_HumanoidChildAddedConn = nil :: RBXScriptConnection?,
+		_HumanoidChildRemovedConn = nil :: RBXScriptConnection?,
+		_CameraChangedConn = nil :: RBXScriptConnection?,
+		_WorkspaceCameraChangedConn = nil :: RBXScriptConnection?,
+		_HeightScaleChangedConn = nil :: RBXScriptConnection?,
+
+		_LastCameraTransform = nil :: CFrame?,
+		LastSubjectCFrame = nil :: CFrame?,
+
+		_GamepadPanningCamera = Vector2.new(0, 0),
+	}, CameraController) :: any
 
 	self._WorkspaceCameraChangedConn = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 		self:_OnWorkspaceCameraChanged()
@@ -1133,476 +1812,46 @@ function CameraController.new()
 		self:_OnWorkspaceCameraChanged()
 	end
 
-	local lastThumbstickRotate = nil
-	local numOfSeconds = 0.7
-	local currentSpeed = 0
-	local maxSpeed = 6
-	local vrMaxSpeed = 4
-	local lastThumbstickPos = Vector2.new(0, 0)
-	local ySensitivity = 0.65
-	local lastVelocity = nil
-
-
-
-	local function gamepadLinearToCurve(thumbstickPosition)
-		local function onAxis(axisValue)
-			local sign = 1
-			if axisValue < 0 then
-				sign = -1
-			end
-			local point = fromSCurveSpace(sCurveTranform(toSCurveSpace(math.abs(axisValue))))
-			point = point * sign
-			return math.clamp(point, -1, 1)
-		end
-		return Vector2.new(onAxis(thumbstickPosition.X), onAxis(thumbstickPosition.Y))
-	end
-
-	function this:UpdateGamepad()
-		local gamepadPan = this.GamepadPanningCamera
-		if gamepadPan and (hasGameLoaded or not VRService.VREnabled) then
-			gamepadPan = gamepadLinearToCurve(gamepadPan)
-			local currentTime = tick()
-			if gamepadPan.X ~= 0 or gamepadPan.Y ~= 0 then
-				this.userPanningTheCamera = true
-			elseif gamepadPan == ZERO_VECTOR2 then
-				lastThumbstickRotate = nil
-				if lastThumbstickPos == ZERO_VECTOR2 then
-					currentSpeed = 0
-				end
-			end
-
-			local finalConstant = 0
-
-			if lastThumbstickRotate then
-				if VRService.VREnabled then
-					currentSpeed = vrMaxSpeed
-				else
-					local elapsedTime = (currentTime - lastThumbstickRotate) * 10
-					currentSpeed = currentSpeed + (maxSpeed * ((elapsedTime * elapsedTime) / numOfSeconds))
-
-					if currentSpeed > maxSpeed then
-						currentSpeed = maxSpeed
-					end
-
-					if lastVelocity then
-						local velocity = (gamepadPan - lastThumbstickPos) / (currentTime - lastThumbstickRotate)
-						local velocityDeltaMag = (velocity - lastVelocity).Magnitude
-
-						if velocityDeltaMag > 12 then
-							currentSpeed = currentSpeed * (20 / velocityDeltaMag)
-							if currentSpeed > maxSpeed then
-								currentSpeed = maxSpeed
-							end
-						end
-					end
-				end
-
-				local success, gamepadCameraSensitivity = pcall(function()
-					return Settings.GameSettings.GamepadCameraSensitivity
-				end)
-				finalConstant = success and (gamepadCameraSensitivity * currentSpeed) or currentSpeed
-				lastVelocity = (gamepadPan - lastThumbstickPos) / (currentTime - lastThumbstickRotate)
-			end
-
-			lastThumbstickPos = gamepadPan
-			lastThumbstickRotate = currentTime
-
-			return Vector2.new(
-				gamepadPan.X * finalConstant,
-				gamepadPan.Y * finalConstant * ySensitivity * Settings.GameSettings:GetCameraYInvertValue()
-			)
-		end
-
-		return ZERO_VECTOR2
-	end
-
-	local InputBeganConn, InputChangedConn, InputEndedConn, WindowUnfocusConn, MenuOpenedConn, ShiftLockToggleConn, GamepadConnectedConn, GamepadDisconnectedConn, TouchActivateConn =
-		nil, nil, nil, nil, nil, nil, nil, nil, nil
-
-	function this:DisconnectInputEvents()
-		if InputBeganConn then
-			InputBeganConn:Disconnect()
-			InputBeganConn = nil
-		end
-		if InputChangedConn then
-			InputChangedConn:Disconnect()
-			InputChangedConn = nil
-		end
-		if InputEndedConn then
-			InputEndedConn:Disconnect()
-			InputEndedConn = nil
-		end
-		if WindowUnfocusConn then
-			WindowUnfocusConn:Disconnect()
-			WindowUnfocusConn = nil
-		end
-		if MenuOpenedConn then
-			MenuOpenedConn:Disconnect()
-			MenuOpenedConn = nil
-		end
-		if ShiftLockToggleConn then
-			ShiftLockToggleConn:Disconnect()
-			ShiftLockToggleConn = nil
-		end
-		if GamepadConnectedConn then
-			GamepadConnectedConn:Disconnect()
-			GamepadConnectedConn = nil
-		end
-		if GamepadDisconnectedConn then
-			GamepadDisconnectedConn:Disconnect()
-			GamepadDisconnectedConn = nil
-		end
-		if self._SubjectStateChangedConn then
-			self._SubjectStateChangedConn:Disconnect()
-			self._SubjectStateChangedConn = nil
-		end
-		if self._WorkspaceChangedConn then
-			self._WorkspaceChangedConn:Disconnect()
-			self._WorkspaceChangedConn = nil
-		end
-		if TouchActivateConn then
-			TouchActivateConn:Disconnect()
-			TouchActivateConn = nil
-		end
-
-		this.TurningLeft = false
-		this.TurningRight = false
-		this.LastCameraTransform = nil
-		self.LastSubjectCFrame = nil
-		this.UserPanningTheCamera = false
-		this.RotateInput = Vector2.new()
-		this.GamepadPanningCamera = Vector2.new(0, 0)
-
-		-- Reset input states
-		startPos = nil
-		lastPos = nil
-		panBeginLook = nil
-		self._IsRightMouseDown = false
-		self._IsMiddleMouseDown = false
-
-		fingerTouches = {}
-		NumUnsunkTouches = 0
-
-		StartingDiff = nil
-		pinchBeginZoom = nil
-
-		-- Unlock mouse for example if right mouse button was being held down
-		if UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
-			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		end
-	end
-
-	function this:ResetInputStates()
-		self._IsRightMouseDown = false
-		self._IsMiddleMouseDown = false
-		this.TurningRight = false
-		this.TurningLeft = false
-		OnMousePanButtonReleased() -- this function doesn't seem to actually need parameters
-
-		if UserInputService.TouchEnabled then
-			--[[menu opening was causing serious touch issues
-			this should disable all active touch events if
-			they're active when menu opens.]]
-			for inputObject, value in pairs(fingerTouches) do
-				fingerTouches[inputObject] = nil
-			end
-			panBeginLook = nil
-			startPos = nil
-			lastPos = nil
-			this.UserPanningTheCamera = false
-			StartingDiff = nil
-			pinchBeginZoom = nil
-			NumUnsunkTouches = 0
-		end
-	end
-
-	function this.getGamepadPan(name, state, input)
-		if state == Enum.UserInputState.Cancel then
-			this.GamepadPanningCamera = ZERO_VECTOR2
-			return
-		end
-
-		if input.UserInputType == this.activeGamepad and input.KeyCode == Enum.KeyCode.Thumbstick2 then
-			local inputVector = Vector2.new(input.Position.X, -input.Position.Y)
-			if inputVector.Magnitude > THUMBSTICK_DEADZONE then
-				this.GamepadPanningCamera = Vector2.new(input.Position.X, -input.Position.Y)
-			else
-				this.GamepadPanningCamera = ZERO_VECTOR2
-			end
-		end
-	end
-
-	function this.doGamepadZoom(name, state, input)
-		if
-			input.UserInputType == this.activeGamepad
-			and input.KeyCode == Enum.KeyCode.ButtonR3
-			and state == Enum.UserInputState.Begin
-		then
-			if this.ZoomEnabled then
-				if this:GetCameraZoom() > 0.5 then
-					this:ZoomCamera(0)
-				else
-					this:ZoomCamera(10)
-				end
-			end
-		end
-	end
-
-	function this:BindGamepadInputActions()
-		ContextActionService:BindAction("RootCamGamepadPan", this.getGamepadPan, false, Enum.KeyCode.Thumbstick2)
-		ContextActionService:BindAction("RootCamGamepadZoom", this.doGamepadZoom, false, Enum.KeyCode.ButtonR3)
-	end
-
-	function this:ConnectInputEvents()
-		InputBeganConn = UserInputService.InputBegan:Connect(function(input, processed)
-			if input.UserInputType == Enum.UserInputType.Touch then
-				OnTouchBegan(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-				OnMouse2Down(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-				OnMouse3Down(input, processed)
-			end
-			-- Keyboard
-			if input.UserInputType == Enum.UserInputType.Keyboard then
-				OnKeyDown(input, processed)
-			end
-		end)
-
-		InputChangedConn = UserInputService.InputChanged:Connect(function(input, processed)
-			if input.UserInputType == Enum.UserInputType.Touch then
-				OnTouchChanged(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseMovement then
-				OnMouseMoved(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseWheel then
-				OnMouseWheel(input, processed)
-			end
-		end)
-
-		InputEndedConn = UserInputService.InputEnded:Connect(function(input, processed)
-			if input.UserInputType == Enum.UserInputType.Touch then
-				OnTouchEnded(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-				OnMouse2Up(input, processed)
-			elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-				OnMouse3Up(input, processed)
-			end
-			-- Keyboard
-			if input.UserInputType == Enum.UserInputType.Keyboard then
-				OnKeyUp(input, processed)
-			end
-		end)
-
-		WindowUnfocusConn = UserInputService.WindowFocusReleased:Connect(onWindowFocusReleased)
-
-		MenuOpenedConn = GuiService.MenuOpened:Connect(function()
-			this:ResetInputStates()
-		end)
-
-		self._WorkspaceChangedConn = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(onCurrentCameraChanged)
-		if workspace.CurrentCamera then
-			onCurrentCameraChanged()
-		end
-
-		ShiftLockToggleConn = ShiftLockController.OnShiftLockToggled.Event:Connect(function()
-			this:UpdateMouseBehavior()
-		end)
-
-		this.RotateInput = Vector2.new()
-
-		this.activeGamepad = nil
-		local function assignActivateGamepad()
-			local connectedGamepads = UserInputService:GetConnectedGamepads()
-			if #connectedGamepads > 0 then
-				for i = 1, #connectedGamepads do
-					if this.activeGamepad == nil then
-						this.activeGamepad = connectedGamepads[i]
-					elseif connectedGamepads[i].Value < this.activeGamepad.Value then
-						this.activeGamepad = connectedGamepads[i]
-					end
-				end
-			end
-
-			if this.activeGamepad == nil then -- nothing is connected, at least set up for gamepad1
-				this.activeGamepad = Enum.UserInputType.Gamepad1
-			end
-		end
-
-		GamepadConnectedConn = UserInputService.GamepadDisconnected:Connect(function(gamepadEnum)
-			if this.activeGamepad ~= gamepadEnum then
-				return
-			end
-			this.activeGamepad = nil
-			assignActivateGamepad()
-		end)
-
-		GamepadDisconnectedConn = UserInputService.GamepadConnected:Connect(function(gamepadEnum)
-			if this.activeGamepad == nil then
-				assignActivateGamepad()
-			end
-		end)
-
-		self:BindGamepadInputActions()
-
-		assignActivateGamepad()
-
-		-- set mouse behavior
-		self:UpdateMouseBehavior()
-	end
-
-	--Process tweens related to tap-to-recenter and double-tap-to-zoom
-	--Needs to be called from specific cameras on each update
-	function this:ProcessTweens()
-		for name, tween in pairs(tweens) do
-			local alpha = math.min(1.0, (tick() - tween.start) / tween.duration)
-			tween.to = tween.func(tween.from, tween.to, alpha)
-			if math.abs(1 - alpha) < 0.0001 then
-				tweens[name] = nil
-			end
-		end
-	end
-
-	function this:SetEnabled(newState)
-		if newState ~= self.Enabled then
-			self.Enabled = newState
-			if self.Enabled then
-				self:ConnectInputEvents()
-				self.cframe = workspace.CurrentCamera.CFrame
-			else
-				self:DisconnectInputEvents()
-			end
-		end
-	end
-
-	local function OnPlayerAdded(player)
-		player.Changed:Connect(function(prop)
-			if this.Enabled then
-				if prop == "CameraMode" or prop == "CameraMaxZoomDistance" or prop == "CameraMinZoomDistance" then
-					this:ZoomCameraFixedBy(0)
-				end
-			end
-		end)
-
-		local function OnCharacterAdded(newCharacter)
-			local humanoid = findPlayerHumanoid(player)
-			local start = tick()
-			while tick() - start < 0.3 and (humanoid == nil or humanoid.Torso == nil) do
-				wait()
-				humanoid = findPlayerHumanoid(player)
-			end
-
-			if humanoid and humanoid.Torso and player.Character == newCharacter then
-				local newDesiredLook = (humanoid.Torso.CFrame.lookVector - Vector3.new(
-					0,
-					math.sin(math.rad(DEFAULT_CAMERA_ANGLE)),
-					0
-				)).Unit
-				local horizontalShift = findAngleBetweenXZVectors(newDesiredLook, this:GetCameraLook())
-				local vertShift = math.asin(this:GetCameraLook().Y) - math.asin(newDesiredLook.Y)
-				if not isFinite(horizontalShift) then
-					horizontalShift = 0
-				end
-				if not isFinite(vertShift) then
-					vertShift = 0
-				end
-				this.RotateInput = Vector2.new(horizontalShift, vertShift)
-
-				-- reset old camera info so follow cam doesn't rotate us
-				this.LastCameraTransform = nil
-			end
-
-			-- Need to wait for camera cframe to update before we zoom in
-			-- Not waiting will force camera to original cframe
-			wait()
-			this:ZoomCamera(this.DefaultZoom)
-		end
-
-		player.CharacterAdded:Connect(function(character)
-			if this.Enabled or setCameraOnSpawn then
-				OnCharacterAdded(character)
-				setCameraOnSpawn = false
-			end
-		end)
-		if player.Character then
-			spawn(function()
-				OnCharacterAdded(player.Character)
-			end)
-		end
-	end
 	if PlayersService.LocalPlayer then
-		OnPlayerAdded(PlayersService.LocalPlayer)
+		self:_OnPlayerAdded(PlayersService.LocalPlayer)
 	end
-	PlayersService.ChildAdded:Connect(function(child)
+	maid:GiveTask(PlayersService.ChildAdded:Connect(function(child)
 		if child and PlayersService.LocalPlayer == child then
-			OnPlayerAdded(PlayersService.LocalPlayer)
+			self:_OnPlayerAdded(PlayersService.LocalPlayer)
 		end
-	end)
-
-	local function OnGameLoaded()
-		hasGameLoaded = true
-	end
+	end))
 
 	spawn(function()
 		if game:IsLoaded() then
-			OnGameLoaded()
+			self:_OnGameLoaded()
 		else
 			game.Loaded:wait()
-			OnGameLoaded()
+			self:_OnGameLoaded()
 		end
 	end)
-
-	local function OnDynamicThumbstickEnabled()
-		if UserInputService.TouchEnabled then
-			self._IsDynamicThumbstickEnabled = true
-		end
-	end
-
-	local function OnDynamicThumbstickDisabled()
-		self._IsDynamicThumbstickEnabled = false
-	end
-
-	local function OnGameSettingsTouchMovementModeChanged()
-		if LocalPlayer.DevTouchMovementMode == Enum.DevTouchMovementMode.UserChoice then
-			if Settings.GameSettings.TouchMovementMode.Name == "DynamicThumbstick" then
-				OnDynamicThumbstickEnabled()
-			else
-				OnDynamicThumbstickDisabled()
-			end
-		end
-	end
-
-	local function OnDevTouchMovementModeChanged()
-		if LocalPlayer.DevTouchMovementMode.Name == "DynamicThumbstick" then
-			OnDynamicThumbstickEnabled()
-		else
-			OnGameSettingsTouchMovementModeChanged()
-		end
-	end
 
 	if PlayersService.LocalPlayer then
-		PlayersService.LocalPlayer.Changed:Connect(function(prop)
+		maid:GiveTask(PlayersService.LocalPlayer.Changed:Connect(function(prop)
 			if prop == "DevTouchMovementMode" then
-				OnDevTouchMovementModeChanged()
+				self:_OnDevTouchMovementModeChanged()
 			end
-		end)
-		OnDevTouchMovementModeChanged()
+		end))
+		self:_OnDevTouchMovementModeChanged()
 	end
 
-	Settings.GameSettings.Changed:Connect(function(prop)
+	maid:GiveTask(Settings.GameSettings.Changed:Connect(function(prop)
 		if prop == "TouchMovementMode" then
-			OnGameSettingsTouchMovementModeChanged()
+			self:_OnGameSettingsTouchMovementModeChanged()
 		end
-	end)
-	OnGameSettingsTouchMovementModeChanged()
+	end))
+	self:_OnGameSettingsTouchMovementModeChanged()
+
 	Settings.GameSettings:SetCameraYInvertVisible()
 	pcall(function()
 		Settings.GameSettings:SetGamepadCameraSensitivityVisible()
 	end)
 
-	return this
-end
-
-function CameraController.init(maid)
-
+	return self
 end
 
 return CameraController
