@@ -1,5 +1,5 @@
 {
-  "name": "camera",
+  "name": "player-camera",
   "tree": {
     "$path": "src"
   }

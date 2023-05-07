@@ -1,5 +1,5 @@
 [package]
-name = "nightcycle/camera"
+name = "nightcycle/player-camera"
 description = "A camera!"
 version = "1.0.0"
 authors = ["CJ Oyer <coyer@nightcycle.us>"]
